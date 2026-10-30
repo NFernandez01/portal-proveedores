@@ -7,11 +7,13 @@ const auth = useAuthStore()
 const router = useRouter()
 const menuAbierto = ref(false)
 
+// "exacto": Inicio es la ruta "/" y, sin coincidencia exacta, quedaría activo en TODAS las páginas
 const links = [
-  { to: { name: 'dashboard' }, texto: 'Inicio' },
-  { to: { name: 'ordenes' }, texto: 'Órdenes de compra' },
-  { to: { name: 'facturas' }, texto: 'Facturas' },
+  { to: { name: 'dashboard' }, texto: 'Inicio', exacto: true },
+  { to: { name: 'ordenes' }, texto: 'Órdenes de compra', exacto: false },
+  { to: { name: 'facturas' }, texto: 'Facturas', exacto: false },
 ]
+const claseActiva = 'bg-blue-100 font-medium text-blue-800'
 
 async function salir() {
   await auth.logout()
@@ -54,7 +56,8 @@ async function salir() {
             <RouterLink
               :to="link.to"
               class="block rounded-md px-3 py-2 hover:bg-blue-50"
-              active-class="bg-blue-100 font-medium text-blue-800"
+              :active-class="link.exacto ? '' : claseActiva"
+              :exact-active-class="claseActiva"
               @click="menuAbierto = false"
             >{{ link.texto }}</RouterLink>
           </li>

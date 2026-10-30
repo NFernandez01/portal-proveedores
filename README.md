@@ -6,19 +6,24 @@ Portal web donde los **proveedores** consultan sus órdenes de compra y cargan s
 
 Es un proyecto personal para practicar un flujo típico de un ERP con **PHP 8.3 + Slim**, **PostgreSQL** y **Vue 3**, cuidando la seguridad, los tests y la experiencia de uso.
 
-<!-- Capturas: agregalas en docs/capturas/ con estos nombres -->
-| Órdenes de compra | Carga de factura | Revisión (admin) |
+![Inicio del administrador](docs/capturas/01-inicio.png)
+
+| Órdenes de compra | Carga de factura (proveedor) | Revisión (admin) |
 |---|---|---|
 | ![Órdenes](docs/capturas/02-ordenes.png) | ![Carga de factura](docs/capturas/03-detalle-orden.png) | ![Revisión de facturas](docs/capturas/04-facturas.png) |
+
+<p align="center"><img src="docs/capturas/05-mobile.png" alt="Vista mobile" width="260"></p>
 
 ## Funcionalidades
 
 - **Login con roles:** `admin` (empresa) y `proveedor`.
+- **Inicio con resumen:** cantidad e importe de facturas por estado, y una acción principal según el rol ("Tenés 3 facturas para revisar").
 - Cada proveedor ve **solo sus** órdenes y facturas.
 - **Carga de facturas** (tipo, punto de venta, número, fecha, importe y PDF) con reglas de negocio:
   - no se puede cargar dos veces la misma factura;
   - el importe no puede superar el saldo pendiente de la orden;
-  - solo se aceptan PDF de hasta 5 MB.
+  - solo se aceptan PDF de hasta 5 MB;
+  - el importe acepta coma decimal (`1500,50`), como se escribe en Argentina.
 - **Revisión por parte del admin:** aprueba o rechaza con motivo obligatorio, con confirmación previa.
 - **Descarga del comprobante**, con control de permisos.
 - **Interfaz responsive:** tablas en escritorio, tarjetas en mobile, estados de carga, vacío y error, y notificaciones.
@@ -122,7 +127,6 @@ Usé Claude Code como asistente para [por ejemplo: revisar código, diagnosticar
 
 ## Próximas mejoras
 
-- Pantalla de inicio con el resumen por estado (el endpoint `/api/dashboard` ya existe).
 - Refresh tokens y cierre de sesión en todos los dispositivos.
 - Notificación por mail al proveedor cuando se resuelve una factura.
 - Tests end-to-end con Playwright.

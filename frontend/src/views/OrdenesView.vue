@@ -4,6 +4,7 @@ import { RouterLink } from 'vue-router'
 import { http, mensajeDeError } from '@/api/http'
 import { formatoFecha, formatoPesos } from '@/utils/formato'
 import { useAuthStore } from '@/stores/auth'
+import StatusBadge from '@/components/StatusBadge.vue'
 import type { EstadoOrden, Orden, Pagina } from '@/types'
 
 const auth = useAuthStore()

@@ -43,6 +43,11 @@ export interface Pagina<T> {
   porPagina: number
 }
 
+/** Respuesta de GET /api/dashboard: cantidad e importe de facturas por estado */
+export interface Resumen {
+  facturas: Record<EstadoFactura, { cantidad: number; importe: string }>
+}
+
 /** Formato de error que devuelve la API */
 export interface ErrorApi {
   error: string

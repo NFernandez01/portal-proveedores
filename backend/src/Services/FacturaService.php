@@ -24,6 +24,9 @@ final class FacturaService
 
     public function crear(array $usuario, array $datos, ?UploadedFileInterface $archivo): array
     {
+        // En Argentina se escribe "1500,50": aceptamos coma o punto como separador decimal
+        $datos['importe'] = str_replace(',', '.', trim((string) ($datos['importe'] ?? '')));
+
         $errores = $this->validar($datos, $archivo);
         if ($errores !== []) {
             throw new ApiException(422, 'Revisá los datos de la factura.', $errores);
@@ -123,7 +126,7 @@ final class FacturaService
 
         $importe = (string) ($d['importe'] ?? '');
         if (!preg_match('/^\d{1,12}(\.\d{1,2})?$/', $importe) || (float) $importe <= 0) {
-            $e['importe'] = 'Importe inválido. Usá punto para los decimales (ej: 1500.50).';
+            $e['importe'] = 'Importe inválido (ej: 1500,50).';
         }
 
         if ($archivo === null || $archivo->getError() !== UPLOAD_ERR_OK) {
