@@ -16,7 +16,7 @@ RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-av
  && printf '<Directory /var/www/html/public>\n  AllowOverride All\n</Directory>\n' > /etc/apache2/conf-available/portal.conf \
  && a2enconf portal
 
-# Límite de subida: PDFs de hasta 5 MB (con margen)
-RUN printf 'upload_max_filesize=6M\npost_max_size=8M\nexpose_php=Off\n' > /usr/local/etc/php/conf.d/portal.ini
+# Límite de subida (PDFs de hasta 5 MB, con margen) y errores de PHP solo al log, NUNCA en la respuesta
+RUN printf 'upload_max_filesize=6M\npost_max_size=8M\nexpose_php=Off\ndisplay_errors=Off\nlog_errors=On\nerror_log=/dev/stderr\n' > /usr/local/etc/php/conf.d/portal.ini
 
 WORKDIR /var/www/html
