@@ -57,7 +57,14 @@ final class FacturaController
             throw new ApiException(404, 'El archivo no está disponible.');
         }
 
-        $res->getBody()->write((string) file_get_contents($ruta));
+        // Si existe pero no se puede leer (permisos), error controlado en vez de un warning de PHP
+        $contenido = is_readable($ruta) ? file_get_contents($ruta) : false;
+        if ($contenido === false) {
+            error_log("No se pudo leer el comprobante de la factura {$factura['id']}: {$ruta}");
+            throw new ApiException(500, 'No pudimos abrir el comprobante. Avisá al administrador.');
+        }
+
+        $res->getBody()->write($contenido);
         return $res
             ->withHeader('Content-Type', 'application/pdf')
             ->withHeader('Content-Disposition', 'attachment; filename="factura-' . $factura['id'] . '.pdf"');

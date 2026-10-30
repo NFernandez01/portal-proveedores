@@ -55,7 +55,7 @@ npm run dev                        # App en http://localhost:5173
 
 **Tests:**
 ```bash
-docker compose exec backend vendor/bin/phpunit --testdox   # backend
+docker compose exec -u www-data backend vendor/bin/phpunit --testdox   # backend (mismo usuario que Apache)
 cd frontend && npm run test:unit -- --run                  # frontend
 ```
 
