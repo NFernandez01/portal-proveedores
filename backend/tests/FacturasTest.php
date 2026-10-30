@@ -38,6 +38,8 @@ final class FacturasTest extends ApiTestCase
         $res = $this->cargar($this->login('proveedor1@portal.test'), $this->camposValidos());
         $this->assertSame(201, $res->getStatusCode());
         $this->assertSame('pendiente', $this->json($res)['estado']);
+        // El nombre interno del PDF es un detalle del servidor: no se expone al cliente
+        $this->assertArrayNotHasKey('archivo', $this->json($res));
     }
 
     public function test_factura_duplicada_da_409(): void
