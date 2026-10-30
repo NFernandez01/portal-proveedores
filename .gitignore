@@ -13,3 +13,7 @@ backend/storage/uploads/*
 frontend/dist/
 coverage/
 .phpunit.cache/
+
+# pruebas
+cookies.txt
+admin.txt
