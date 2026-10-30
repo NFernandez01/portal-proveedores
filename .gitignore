@@ -1,0 +1,15 @@
+# Dependencias
+backend/vendor/
+frontend/node_modules/
+
+# Secretos
+.env
+
+# Archivos subidos por usuarios (sí versionamos la carpeta vacía)
+backend/storage/uploads/*
+!backend/storage/uploads/.gitkeep
+
+# Builds y reportes
+frontend/dist/
+coverage/
+.phpunit.cache/
