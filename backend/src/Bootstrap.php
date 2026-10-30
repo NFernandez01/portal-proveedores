@@ -4,13 +4,19 @@ declare(strict_types=1);
 namespace App;
 
 use App\Controllers\AuthController;
+use App\Controllers\DashboardController;     
+use App\Controllers\FacturaController;       
 use App\Controllers\OrdenController;
 use App\Middleware\ApiErrorMiddleware;
 use App\Middleware\AuthMiddleware;
+use App\Middleware\RoleMiddleware;           
+use App\Middleware\SecurityHeadersMiddleware;
+use App\Repositories\FacturaRepository;      
 use App\Repositories\LoginIntentoRepository;
 use App\Repositories\OrdenRepository;
 use App\Repositories\UsuarioRepository;
 use App\Services\AuthService;
+use App\Services\FacturaService;             
 use App\Support\Config;
 use App\Support\Json;
 use App\Support\JwtService;
@@ -35,7 +41,19 @@ final class Bootstrap
             $jwt,
             $usuarios
         );
-        $ordenController = new OrdenController(new OrdenRepository($pdo));
+
+        // facturas, dashboard y carpeta de uploads
+        $dirUploads = dirname(__DIR__) . '/storage/uploads';
+        $facturaRepo = new FacturaRepository($pdo);
+        $facturaController = new FacturaController(
+            new FacturaService($pdo, $facturaRepo, $dirUploads),
+            $facturaRepo,
+            $dirUploads
+        );
+        $dashboardController = new DashboardController($facturaRepo);
+
+        // también recibe $facturaRepo
+        $ordenController = new OrdenController(new OrdenRepository($pdo), $facturaRepo);
         $authMiddleware = new AuthMiddleware($jwt);
 
         // --- Middlewares globales (el último agregado se ejecuta primero) ---
@@ -44,6 +62,7 @@ final class Bootstrap
         $app->add(new ApiErrorMiddleware($app->getResponseFactory()));
         $errores = $app->addErrorMiddleware(Config::get('APP_ENV', 'prod') === 'local', true, true);
         $errores->getDefaultErrorHandler()->forceContentType('application/json');
+        $app->add(new SecurityHeadersMiddleware());
 
         // --- Rutas públicas ---
         $app->get('/api/health', function (Request $req, Response $res) use ($pdo): Response {
@@ -54,10 +73,16 @@ final class Bootstrap
         $app->post('/api/auth/logout', [$authController, 'logout']);
 
         // --- Rutas protegidas: todo el grupo pasa por AuthMiddleware ---
-        $app->group('/api', function (RouteCollectorProxy $api) use ($authController, $ordenController) {
+        $app->group('/api', function (RouteCollectorProxy $api) use ($authController, $ordenController, $facturaController, $dashboardController) {
             $api->get('/me', [$authController, 'me']);
             $api->get('/ordenes', [$ordenController, 'listar']);
             $api->get('/ordenes/{id:[0-9]+}', [$ordenController, 'ver']);
+
+            $api->get('/facturas', [$facturaController, 'listar']);
+            $api->get('/facturas/{id:[0-9]+}/archivo', [$facturaController, 'descargar']);
+            $api->post('/facturas', [$facturaController, 'crear'])->add(new RoleMiddleware('proveedor'));
+            $api->patch('/facturas/{id:[0-9]+}/estado', [$facturaController, 'resolver'])->add(new RoleMiddleware('admin'));
+            $api->get('/dashboard', [$dashboardController, 'resumen']);
         })->add($authMiddleware);
 
         return $app;

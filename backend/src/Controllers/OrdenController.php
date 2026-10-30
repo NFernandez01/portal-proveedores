@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
+use App\Repositories\FacturaRepository;
 use App\Repositories\OrdenRepository;
 use App\Support\ApiException;
 use App\Support\Json;
@@ -13,7 +14,7 @@ final class OrdenController
 {
     private const ESTADOS = ['abierta', 'facturada', 'cerrada'];
 
-    public function __construct(private OrdenRepository $ordenes) {}
+    public function __construct(private OrdenRepository $ordenes, private FacturaRepository $facturas) {}
 
     public function listar(Request $req, Response $res): Response
     {
@@ -36,6 +37,8 @@ final class OrdenController
             // 404 (no 403) para no confirmar que la orden de otro proveedor existe
             throw new ApiException(404, 'La orden no existe.');
         }
+
+        $orden['facturas'] = $this->facturas->listarPorOrden((int) $orden['id']);
 
         return Json::write($res, $orden);
     }
