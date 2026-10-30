@@ -2,6 +2,8 @@
 import { RouterView } from 'vue-router'
 </script>
 
+<ToastContainer />
+
 <template>
   <RouterView />
 </template>

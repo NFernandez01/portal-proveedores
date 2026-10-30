@@ -91,7 +91,7 @@ cargar()
             <td class="px-4 py-3">{{ formatoFecha(o.fecha) }}</td>
             <td class="px-4 py-3 text-right tabular-nums">{{ formatoPesos(o.total) }}</td>
             <td class="px-4 py-3 text-right tabular-nums">{{ formatoPesos(o.saldo) }}</td>
-            <td class="px-4 py-3 capitalize">{{ o.estado }}</td>
+            <td class="px-4 py-3 capitalize"><StatusBadge :estado="o.estado" /></td>
           </tr>
         </tbody>
       </table>
