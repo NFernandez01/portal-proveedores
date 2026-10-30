@@ -53,16 +53,18 @@ final class OrdenRepository
 
     /**
      * Arma el WHERE según quién pregunta. Si es proveedor, SIEMPRE filtra por su proveedor_id,
-     * que viene del token. Los fragmentos de SQL son fijos y los valores van como parámetros.
+     * que viene del token; un rol desconocido se rechaza (ver Alcance).
+     * Los fragmentos de SQL son fijos y los valores van como parámetros.
      */
     private function filtros(array $usuario, ?string $estado): array
     {
         $condiciones = [];
         $params = [];
 
-        if ($usuario['rol'] === 'proveedor') {
+        $proveedorId = Alcance::proveedorId($usuario);
+        if ($proveedorId !== null) {
             $condiciones[] = 'o.proveedor_id = :pid';
-            $params['pid'] = $usuario['proveedor_id'];
+            $params['pid'] = $proveedorId;
         }
         if ($estado !== null) {
             $condiciones[] = 'o.estado = :estado';

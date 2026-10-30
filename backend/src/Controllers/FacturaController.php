@@ -47,7 +47,8 @@ final class FacturaController
 
     public function descargar(Request $req, Response $res, array $args): Response
     {
-        $factura = $this->facturas->buscar((int) $args['id'], $req->getAttribute('usuario'));
+        // archivoDe() aplica el mismo alcance que el resto: un proveedor no baja PDFs ajenos
+        $factura = $this->facturas->archivoDe((int) $args['id'], $req->getAttribute('usuario'));
         if ($factura === null) {
             throw new ApiException(404, 'La factura no existe.');
         }

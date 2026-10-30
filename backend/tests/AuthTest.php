@@ -41,4 +41,33 @@ final class AuthTest extends ApiTestCase
 
         $this->assertSame(429, $res->getStatusCode());
     }
+
+    /**
+     * Bug corregido: antes, un login correcto de OTRA cuenta desde la misma IP borraba
+     * todos los intentos fallidos y permitía seguir probando contraseñas sin límite.
+     */
+    public function test_login_correcto_de_otra_cuenta_no_resetea_el_rate_limit(): void
+    {
+        $ip = '10.98.' . random_int(0, 255) . '.' . random_int(1, 254);
+        $fallar = fn () => $this->request('POST', '/api/auth/login',
+            ['email' => 'admin@portal.test', 'password' => 'mal'], null, $ip);
+
+        for ($i = 0; $i < 4; $i++) {
+            $fallar();
+        }
+        // El atacante entra con su propia cuenta desde la misma IP...
+        $propia = $this->request('POST', '/api/auth/login',
+            ['email' => 'proveedor1@portal.test', 'password' => 'Demo1234!'], null, $ip);
+        $this->assertSame(200, $propia->getStatusCode());
+
+        // ...y sigue intentando contra el admin: el 5º fallo cuenta y el 6º se bloquea
+        $this->assertSame(401, $fallar()->getStatusCode());
+        $this->assertSame(429, $fallar()->getStatusCode());
+    }
+
+    public function test_el_email_no_distingue_mayusculas(): void
+    {
+        $res = $this->request('POST', '/api/auth/login', ['email' => '  Admin@Portal.TEST ', 'password' => 'Demo1234!']);
+        $this->assertSame(200, $res->getStatusCode());
+    }
 }

@@ -38,7 +38,7 @@ final class OrdenController
             throw new ApiException(404, 'La orden no existe.');
         }
 
-        $orden['facturas'] = $this->facturas->listarPorOrden((int) $orden['id']);
+        $orden['facturas'] = $this->facturas->listarPorOrden((int) $orden['id'], $req->getAttribute('usuario'));
 
         return Json::write($res, $orden);
     }

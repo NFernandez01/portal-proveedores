@@ -7,10 +7,12 @@ use PDO;
 
 final class FacturaRepository
 {
+    // Columnas que se devuelven al frontend. NO incluye "archivo": el nombre interno
+    // del PDF es un detalle del servidor y el cliente no lo necesita.
     private const SELECT = '
         SELECT f.id, f.orden_id, o.numero AS orden_numero, f.proveedor_id, p.razon_social,
                f.tipo, f.punto_venta, f.numero, f.fecha, f.importe, f.estado,
-               f.motivo_rechazo, f.archivo, f.created_at
+               f.motivo_rechazo, f.created_at
           FROM facturas f
           JOIN ordenes_compra o ON o.id = f.orden_id
           JOIN proveedores p ON p.id = f.proveedor_id';
@@ -19,39 +21,48 @@ final class FacturaRepository
 
     public function listar(array $usuario, ?string $estado): array
     {
-        $condiciones = [];
-        $params = [];
-        if ($usuario['rol'] === 'proveedor') {
-            $condiciones[] = 'f.proveedor_id = :pid';
-            $params['pid'] = $usuario['proveedor_id'];
-        }
+        [$condiciones, $params] = $this->alcance($usuario);
         if ($estado !== null) {
             $condiciones[] = 'f.estado = :estado';
             $params['estado'] = $estado;
         }
-        $where = $condiciones === [] ? '' : ' WHERE ' . implode(' AND ', $condiciones);
 
-        $st = $this->pdo->prepare(self::SELECT . $where . ' ORDER BY f.created_at DESC');
+        $st = $this->pdo->prepare(self::SELECT . self::where($condiciones) . ' ORDER BY f.created_at DESC');
         $st->execute($params);
         return $st->fetchAll();
     }
 
-    public function listarPorOrden(int $ordenId): array
+    /** Facturas de una orden. Filtra por el usuario: es seguro aunque se llame desde cualquier lado. */
+    public function listarPorOrden(int $ordenId, array $usuario): array
     {
-        $st = $this->pdo->prepare(self::SELECT . ' WHERE f.orden_id = :id ORDER BY f.created_at DESC');
-        $st->execute(['id' => $ordenId]);
+        [$condiciones, $params] = $this->alcance($usuario);
+        $condiciones[] = 'f.orden_id = :orden_id';
+        $params['orden_id'] = $ordenId;
+
+        $st = $this->pdo->prepare(self::SELECT . self::where($condiciones) . ' ORDER BY f.created_at DESC');
+        $st->execute($params);
         return $st->fetchAll();
     }
 
     public function buscar(int $id, array $usuario): ?array
     {
-        $sql = self::SELECT . ' WHERE f.id = :id';
-        $params = ['id' => $id];
-        if ($usuario['rol'] === 'proveedor') {
-            $sql .= ' AND f.proveedor_id = :pid';
-            $params['pid'] = $usuario['proveedor_id'];
-        }
-        $st = $this->pdo->prepare($sql);
+        [$condiciones, $params] = $this->alcance($usuario);
+        $condiciones[] = 'f.id = :id';
+        $params['id'] = $id;
+
+        $st = $this->pdo->prepare(self::SELECT . self::where($condiciones));
+        $st->execute($params);
+        return $st->fetch() ?: null;
+    }
+
+    /** Solo para la descarga: devuelve el nombre interno del PDF si el usuario puede verlo. */
+    public function archivoDe(int $id, array $usuario): ?array
+    {
+        [$condiciones, $params] = $this->alcance($usuario);
+        $condiciones[] = 'f.id = :id';
+        $params['id'] = $id;
+
+        $st = $this->pdo->prepare('SELECT f.id, f.archivo FROM facturas f' . self::where($condiciones));
         $st->execute($params);
         return $st->fetch() ?: null;
     }
@@ -104,18 +115,32 @@ final class FacturaRepository
 
     public function resumen(array $usuario): array
     {
-        $where = '';
-        $params = [];
-        if ($usuario['rol'] === 'proveedor') {
-            $where = 'WHERE proveedor_id = :pid';
-            $params['pid'] = $usuario['proveedor_id'];
-        }
+        [$condiciones, $params] = $this->alcance($usuario);
+
         $st = $this->pdo->prepare(
-            "SELECT estado, COUNT(*) AS cantidad, COALESCE(SUM(importe), 0) AS importe
-               FROM facturas {$where}
-              GROUP BY estado"
+            'SELECT f.estado, COUNT(*) AS cantidad, COALESCE(SUM(f.importe), 0) AS importe
+               FROM facturas f' . self::where($condiciones) . '
+              GROUP BY f.estado'
         );
         $st->execute($params);
         return $st->fetchAll();
+    }
+
+    /**
+     * Condición de alcance por usuario, en un solo lugar (antes estaba repetida en 3 métodos).
+     * @return array{0: string[], 1: array<string, mixed>}
+     */
+    private function alcance(array $usuario): array
+    {
+        $proveedorId = Alcance::proveedorId($usuario);   // fail-closed: rol desconocido → 403
+        return $proveedorId === null
+            ? [[], []]
+            : [['f.proveedor_id = :pid'], ['pid' => $proveedorId]];
+    }
+
+    /** @param string[] $condiciones fragmentos de SQL fijos (nunca datos del usuario) */
+    private static function where(array $condiciones): string
+    {
+        return $condiciones === [] ? '' : ' WHERE ' . implode(' AND ', $condiciones);
     }
 }
