@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { http, mensajeDeError } from '@/api/http'
 import { useAuthStore } from '@/stores/auth'
 import { useToastStore } from '@/stores/toast'
@@ -10,7 +11,16 @@ import type { EstadoFactura, Factura } from '@/types'
 
 const auth = useAuthStore()
 const toast = useToastStore()
-const filtro = ref<EstadoFactura | ''>('pendiente')
+const route = useRoute()
+
+/** Toma el filtro de la URL (?estado=aprobada), por ejemplo al venir desde el inicio */
+function estadoDeLaUrl(): EstadoFactura | '' {
+  const q = route.query.estado
+  return q === 'pendiente' || q === 'aprobada' || q === 'rechazada' ? q : 'pendiente'
+}
+
+const filtro = ref<EstadoFactura | ''>(estadoDeLaUrl())
+watch(() => route.query.estado, () => { filtro.value = estadoDeLaUrl() })
 const facturas = ref<Factura[]>([])
 const cargando = ref(false)
 const error = ref('')
@@ -102,10 +112,10 @@ watch(filtro, cargar, { immediate: true })
           <tbody>
             <tr v-for="f in facturas" :key="f.id" class="border-t border-slate-100 align-top">
               <td v-if="auth.isAdmin" class="px-4 py-3">{{ f.razon_social }}</td>
-              <td class="px-4 py-3">{{ f.orden_numero }}</td>
-              <td class="px-4 py-3 font-medium">{{ formatoComprobante(f) }}</td>
-              <td class="px-4 py-3">{{ formatoFecha(f.fecha) }}</td>
-              <td class="px-4 py-3 text-right tabular-nums">{{ formatoPesos(f.importe) }}</td>
+              <td class="whitespace-nowrap px-4 py-3">{{ f.orden_numero }}</td>
+              <td class="whitespace-nowrap px-4 py-3 font-medium">{{ formatoComprobante(f) }}</td>
+              <td class="whitespace-nowrap px-4 py-3">{{ formatoFecha(f.fecha) }}</td>
+              <td class="whitespace-nowrap px-4 py-3 text-right tabular-nums">{{ formatoPesos(f.importe) }}</td>
               <td class="px-4 py-3">
                 <StatusBadge :estado="f.estado" />
                 <p v-if="f.motivo_rechazo" class="mt-1 max-w-xs text-xs text-red-700">{{ f.motivo_rechazo }}</p>

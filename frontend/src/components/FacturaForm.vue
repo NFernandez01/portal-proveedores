@@ -16,6 +16,10 @@ const errores = ref<Record<string, string>>({})
 const enviando = ref(false)
 const inputArchivo = ref<HTMLInputElement | null>(null)
 
+// El usuario puede escribir "1500,50" (formato argentino) o "1500.50"; internamente usamos punto
+const importeNormalizado = computed(() => form.importe.replace(',', '.'))
+const importeNumerico = computed(() => Number(importeNormalizado.value))
+
 const tamanioArchivo = computed(() => (archivo.value ? (archivo.value.size / 1024 / 1024).toFixed(2) + ' MB' : ''))
 
 function elegirArchivo(e: Event) {
@@ -27,8 +31,8 @@ function validar(): boolean {
   const e: Record<string, string> = {}
   if (!/^\d{1,5}$/.test(form.punto_venta) || Number(form.punto_venta) < 1) e.punto_venta = 'Entre 1 y 99999.'
   if (!/^\d{1,8}$/.test(form.numero) || Number(form.numero) < 1) e.numero = 'Entre 1 y 99999999.'
-  if (!/^\d+(\.\d{1,2})?$/.test(form.importe) || Number(form.importe) <= 0) e.importe = 'Ej: 1500.50'
-  else if (Number(form.importe) > Number(props.saldo)) e.importe = `Supera el saldo (${formatoPesos(props.saldo)}).`
+  if (!/^\d+([.,]\d{1,2})?$/.test(form.importe) || importeNumerico.value <= 0) e.importe = 'Ej: 1500,50'
+  else if (importeNumerico.value > Number(props.saldo)) e.importe = `Supera el saldo (${formatoPesos(props.saldo)}).`
   if (!archivo.value) e.archivo = 'Adjuntá el PDF.'
   else if (archivo.value.type !== 'application/pdf') e.archivo = 'Tiene que ser un PDF.'
   else if (archivo.value.size > 5 * 1024 * 1024) e.archivo = 'Máximo 5 MB.'
@@ -40,7 +44,7 @@ async function enviar() {
   if (!validar()) return
   const datos = new FormData()
   datos.append('orden_id', String(props.ordenId))
-  Object.entries(form).forEach(([k, v]) => datos.append(k, v))
+  Object.entries(form).forEach(([k, v]) => datos.append(k, k === 'importe' ? importeNormalizado.value : v))
   datos.append('archivo', archivo.value as File)
 
   enviando.value = true
@@ -87,7 +91,7 @@ async function enviar() {
     </div>
     <div>
       <label for="importe" class="mb-1 block text-sm font-medium">Importe</label>
-      <input id="importe" v-model.trim="form.importe" inputmode="decimal" placeholder="1500.50"
+      <input id="importe" v-model.trim="form.importe" inputmode="decimal" placeholder="1500,50"
         class="w-full rounded-md border px-3 py-2" :class="errores.importe ? 'border-red-400' : 'border-slate-300'" />
       <p class="min-h-5 text-xs text-slate-500" :class="{ '!text-red-600': errores.importe }">
         {{ errores.importe || `Saldo disponible: ${formatoPesos(saldo)}` }}

@@ -49,6 +49,15 @@ final class FacturasTest extends ApiTestCase
         $this->assertSame(409, $this->cargar($token, $campos)->getStatusCode());
     }
 
+    public function test_acepta_importe_con_coma_decimal(): void
+    {
+        $campos = ['importe' => '1,50'] + $this->camposValidos();
+        $res = $this->cargar($this->login('proveedor1@portal.test'), $campos);
+
+        $this->assertSame(201, $res->getStatusCode());
+        $this->assertSame('1.50', $this->json($res)['importe']);
+    }
+
     public function test_importe_mayor_al_saldo_da_422(): void
     {
         $campos = ['importe' => '99999999.00'] + $this->camposValidos();
