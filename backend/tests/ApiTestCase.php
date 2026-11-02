@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace Tests;
 
 use App\Bootstrap;
-use App\Support\Database;
+use App\Support\Arranque;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
 use Slim\App;
@@ -16,7 +16,7 @@ abstract class ApiTestCase extends TestCase
 
     public static function setUpBeforeClass(): void
     {
-        static::$app = Bootstrap::crearApp(Database::connect());
+        static::$app = Bootstrap::crearApp(Arranque::conectar());
     }
 
     protected function request(
